@@ -122,7 +122,7 @@ func viewHandler(w http.ResponseWriter, r *http.Request) {
 		http.NotFound(w, r)
 		return
 	}
-	w.Header().Set("Content-Type", "image")
+	w.Header().Set("Content-Type", "image/"+path.Ext(imagePath)[1:])
 	http.ServeFile(w, r, imagePath)
 }
 func isExists(path string) bool {
