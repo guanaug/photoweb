@@ -13,28 +13,27 @@ import (
 	"strings"
 )
 
-//静态常量
 const (
 	ListDir      = 0x0001
-	UPLOAD_DIR   = "uploads"
-	TEMPLATE_DIR = "./www/html"
+	UPLOAD_DIR   = "uploads"    // 存放上传文件的路径
+	TEMPLATE_DIR = "./www/html" // 存放静态页面文件的路径
 )
 
-//全局变量
 var templates = make(map[string]*template.Template) //用于存放缓存的模板
 
 func init() {
 	fileInfoArr, err := ioutil.ReadDir(TEMPLATE_DIR)
 	if err != nil {
 		panic(err)
-		return
 	}
+
 	var templateName, templatePath string
 	for _, fileInfo := range fileInfoArr {
 		templateName = fileInfo.Name()
 		if ext := path.Ext(templateName); ext != ".html" {
 			continue
 		}
+
 		templatePath = TEMPLATE_DIR + "/" + templateName
 		realName := realName(templateName)
 		t := template.Must(template.ParseFiles(templatePath))
@@ -43,9 +42,10 @@ func init() {
 }
 func realName(tmpl string) string {
 	name := path.Base(tmpl)
-	if "." == name && " " == name {
+	if "." == name || " " == name {
 		return name
 	}
+
 	var nameArr []string
 	nameArr = strings.Split(name, ".html")
 	return nameArr[0]
@@ -57,10 +57,7 @@ func main() {
 	http.HandleFunc("/", safeHandler(listHandler))
 	http.HandleFunc("/upload", safeHandler(uploadHandler))
 	http.HandleFunc("/view", safeHandler(viewHandler))
-	err := http.ListenAndServe(":8080", nil)
-	if err != nil {
-		log.Fatal("ListenAndServe:", err.Error())
-	}
+	log.Fatal(http.ListenAndServe(":8080", nil))
 }
 
 func check(err error) {
@@ -74,7 +71,7 @@ func safeHandler(fn http.HandlerFunc) http.HandlerFunc {
 		defer func() {
 			if e, ok := recover().(error); ok {
 				http.Error(w, e.Error(), http.StatusInternalServerError)
-				log.Println("WARN:panicin %v - %v", fn, e)
+				log.Printf("WARN:panic in %v - %v \n", fn, e)
 				log.Println(string(debug.Stack()))
 			}
 		}()
@@ -119,7 +116,6 @@ func uploadHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func viewHandler(w http.ResponseWriter, r *http.Request) {
-
 	imageId := r.FormValue("id")
 	imagePath := UPLOAD_DIR + "/" + imageId
 	if exists := isExists(imagePath); !exists {
