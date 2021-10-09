@@ -6,6 +6,7 @@ import (
 	"io"
 	"io/ioutil"
 	"log"
+	"mime/multipart"
 	"net/http"
 	"os"
 	"path"
@@ -46,8 +47,8 @@ func realName(tmpl string) string {
 		return name
 	}
 
-	var nameArr []string
-	nameArr = strings.Split(name, ".html")
+	ext := path.Ext(name)
+	nameArr := strings.Split(name, ext)
 	return nameArr[0]
 }
 
@@ -97,6 +98,17 @@ func readerHtml(w http.ResponseWriter, tmpl string, locals map[string]interface{
 	return err
 }
 
+// 根据前 512B 判断是否是图片类型
+func imageDetct(f multipart.File) (string, bool) {
+	data := make([]byte, 512)
+	n, err := f.Read(data)
+	f.Seek(0, 0) // 文件复位
+	check(err)
+
+	t := http.DetectContentType(data[:n])
+	return strings.Split(t, "/")[1], strings.HasPrefix(t, "image/")
+}
+
 func uploadHandler(w http.ResponseWriter, r *http.Request) {
 	if "GET" == r.Method {
 		err := readerHtml(w, "upload", nil)
@@ -104,8 +116,16 @@ func uploadHandler(w http.ResponseWriter, r *http.Request) {
 	} else if "POST" == r.Method {
 		f, h, err := r.FormFile("image")
 		check(err)
-		filename := h.Filename
 		defer f.Close()
+
+		// 不是 image 图片，禁止上传
+		ext, ok := imageDetct(f)
+		if !ok {
+			http.Error(w, "上传的文件不是图片", http.StatusBadRequest)
+			return
+		}
+
+		filename := realName(h.Filename) + "." + ext
 		t, err := os.Create(UPLOAD_DIR + "/" + filename)
 		check(err)
 		defer t.Close()

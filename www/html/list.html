@@ -5,9 +5,10 @@
 	<title>List</title>
 </head>
 <body>
-<ol>
-	{{range $.images}}
-	<li><a href="/view?id={{.|urlquery}}">{{.|html}}</a></li>{{end}}
-</ol>
+	<a href="/upload">上传图片</a>
+	<ol>
+		{{range $.images}}
+		<li><a href="/view?id={{.|urlquery}}">{{.|html}}</a></li>{{end}}
+	</ol>
 </body>
 </html>
